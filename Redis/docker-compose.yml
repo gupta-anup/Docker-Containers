@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass redispassword
+    volumes:
+      - redis-data:/data
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    restart: always
+    ports:
+      - "8083:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:redispassword
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - redis-net
+
+volumes:
+  redis-data:
+
+networks:
+  redis-net:
+    driver: bridge
